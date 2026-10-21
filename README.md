@@ -1,0 +1,2 @@
+# TheBigBangTheoryasProposedbyaToyPoodlewithZeroResidualUrination-NobelPrizeinPsychology-2037-
+残尿感０のトイプードルによるビックバン理論（ノーベル心理学2037）
