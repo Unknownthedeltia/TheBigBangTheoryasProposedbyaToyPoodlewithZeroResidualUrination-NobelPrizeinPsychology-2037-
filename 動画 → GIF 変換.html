@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>動画 → GIF 変換</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1d1b18;--sub:#6b665e;--line:#e2ddd2;--acc:#e8590c;--acc2:#fff;--shadow:0 4px 0 #e2ddd2;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17161a;--card:#222126;--ink:#f1eee8;--sub:#a29d94;--line:#35333a;--acc:#ff8a4c;--acc2:#1d1b18;--shadow:0 4px 0 #35333a}}
+:root[data-theme="dark"]{--bg:#17161a;--card:#222126;--ink:#f1eee8;--sub:#a29d94;--line:#35333a;--acc:#ff8a4c;--acc2:#1d1b18;--shadow:0 4px 0 #35333a}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;line-height:1.6;padding:24px 16px 48px}
+main{max-width:760px;margin:0 auto}
+h1{font-size:1.6rem;margin:0 0 4px}
+h1 span{color:var(--acc)}
+.lead{color:var(--sub);margin:0 0 20px;font-size:.92rem}
+.card{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+#drop{border:3px dashed var(--line);border-radius:14px;padding:34px 16px;text-align:center;cursor:pointer;color:var(--sub);transition:.15s}
+#drop.on,#drop:hover{border-color:var(--acc);color:var(--ink);background:color-mix(in srgb,var(--acc) 8%,transparent)}
+#drop b{display:block;font-size:1.05rem;color:var(--ink)}
+video,#out{max-width:100%;border-radius:10px;display:block;margin:0 auto;background:#000}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+label{display:block;font-size:.82rem;color:var(--sub)}
+label output{float:right;color:var(--ink);font-weight:700}
+input[type=range]{width:100%;accent-color:var(--acc)}
+input[type=number]{width:100%;padding:6px 8px;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+.chk{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:.9rem;margin-top:8px}
+button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:12px 20px;background:var(--acc);color:var(--acc2);cursor:pointer;box-shadow:0 4px 0 color-mix(in srgb,var(--acc) 60%,#000);transition:.1s}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--acc) 60%,#000)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+progress{width:100%;height:12px;accent-color:var(--acc)}
+.msg{font-size:.85rem;color:var(--sub);margin:8px 0 0}
+.hide{display:none}
+.tabs{display:flex;gap:8px;margin-bottom:16px}.tabs button{flex:1;background:var(--card);color:var(--ink);border:2px solid var(--line);box-shadow:var(--shadow)}.tabs button.on{background:var(--acc);color:var(--acc2);border-color:var(--acc)}
+#idrop{border:3px dashed var(--line);border-radius:14px;padding:34px 16px;text-align:center;cursor:pointer;color:var(--sub);transition:.15s}#idrop.on,#idrop:hover{border-color:var(--acc);color:var(--ink);background:color-mix(in srgb,var(--acc) 8%,transparent)}#idrop b{display:block;font-size:1.05rem;color:var(--ink)}
+#ipv{max-height:220px;max-width:100%;margin:14px auto 0;display:block;border-radius:10px;background:repeating-conic-gradient(var(--line) 0 25%,transparent 0 50%) 0 0/16px 16px}#ipv.hide{display:none}
+input[type=color]{width:100%;height:36px;border:2px solid var(--line);border-radius:8px;background:var(--bg);padding:2px}
+select{width:100%;padding:8px;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+</style>
+</head>
+<body>
+<main>
+<h1>動画 → <span>GIF</span> 変換</h1>
+<p class="lead">ブラウザ内だけで変換します。ファイルはどこにも送信されません。</p>
+<div class="tabs"><button id="tv" class="on">🎞️ 動画 → GIF</button><button id="ti">🌈 画像 → 虹色GIF</button></div>
+
+<div id="mv">
+<div class="card">
+  <div id="drop"><b>ここに動画をドロップ</b>またはクリックして選択（mp4 / webm / mov など）</div>
+  <input type="file" id="file" accept="video/*" class="hide">
+  <video id="vid" controls playsinline muted class="hide" style="margin-top:14px;max-height:300px"></video>
+</div>
+
+<div class="card hide" id="set">
+  <div class="grid">
+    <label>幅 (px)<output id="wo">480</output><input type="range" id="w" min="120" max="800" step="10" value="480"></label>
+    <label>フレームレート (fps)<output id="fo">10</output><input type="range" id="f" min="2" max="20" value="10"></label>
+    <label>開始 (秒)<input type="number" id="s" min="0" step="0.1" value="0"></label>
+    <label>終了 (秒)<input type="number" id="e" min="0" step="0.1" value="3"></label>
+  </div>
+  <label class="chk"><input type="checkbox" id="dith" checked> ディザリング（階調をなめらかに）</label>
+  <label class="chk"><input type="checkbox" id="loop" checked> ループ再生</label>
+  <p class="msg" id="est"></p>
+  <div class="row"><button id="go">GIFを作成</button></div>
+  <div class="hide" id="pbox" style="margin-top:14px"><progress id="p" value="0" max="1"></progress><p class="msg" id="pm"></p></div>
+</div>
+
+</div>
+<div class="card hide" id="mi">
+  <div id="idrop"><b>ここに画像をドロップ</b>またはクリックして選択（png / jpg / webp、透過PNGもOK）</div>
+  <input type="file" id="ifile" accept="image/*" class="hide">
+  <img id="ipv" class="hide" alt="選択した画像">
+  <div class="hide" id="iset" style="margin-top:14px">
+    <div class="grid">
+      <label>エフェクト<select id="imode"><option value="r">虹色に光る（グラデ＋輪郭グロー）</option><option value="g">ゲーミング（色相が回転）</option></select></label>
+      <label>幅 (px)<output id="iwo"></output><input type="range" id="iw" min="120" max="600" step="10" value="360"></label>
+      <label>フレーム数<output id="ico"></output><input type="range" id="ic" min="12" max="48" value="24"></label>
+      <label>フレームレート (fps)<output id="ifpso"></output><input type="range" id="ifps" min="5" max="50" value="12"></label>
+      <label>輪郭の光の強さ<output id="iglo"></output><input type="range" id="igl" min="0" max="40" value="18"></label>
+      <label>虹色の濃さ (%)<output id="iino"></output><input type="range" id="iin" min="0" max="100" value="60"></label>
+      <label>背景色<input type="color" id="ibg" value="#101018"></label>
+    </div>
+    <label class="chk"><input type="checkbox" id="ifx1" checked> 虹色グラデーションが流れる</label>
+    <label class="chk"><input type="checkbox" id="ifx2" checked> 輪郭が虹色にぼんやり光る</label>
+    <label class="chk"><input type="checkbox" id="idith" checked> ディザリング</label>
+    <label class="chk"><input type="checkbox" id="iloop" checked> ループ再生</label>
+    <p class="msg" id="iest"></p>
+    <div class="row"><button id="igo">虹色GIFを作成</button></div>
+    <div class="hide" id="ipb" style="margin-top:14px"><progress id="ip" value="0" max="1"></progress><p class="msg" id="ipm"></p></div>
+  </div>
+</div>
+<div class="card hide" id="res">
+  <img id="out" alt="変換結果のGIF">
+  <p class="msg" id="info"></p>
+  <div class="row"><button id="dl">GIFを保存</button></div>
+</div>
+</main>
+
+<script>
+// ---- GIF encoder (固定252色パレット + LZW) ----
+function lzw(px,mcs,out){
+  const clear=1<<mcs,eoi=clear+1;let size=mcs+1,next=eoi+2-1,cur=0,bits=0,dict=new Map(),buf=[];
+  next=eoi+1;
+  const emit=c=>{cur|=c<<bits;bits+=size;while(bits>=8){buf.push(cur&255);cur>>=8;bits-=8}};
+  emit(clear);let pre=px[0];
+  for(let i=1;i<px.length;i++){
+    const k=px[i],key=(pre<<8)|k,v=dict.get(key);
+    if(v!==undefined){pre=v;continue}
+    emit(pre);
+    if(next===4096){emit(clear);dict.clear();size=mcs+1;next=eoi+1}
+    else{if(next>=(1<<size))size++;dict.set(key,next++)}
+    pre=k;
+  }
+  emit(pre);emit(eoi);if(bits>0)buf.push(cur&255);
+  out.push(mcs);
+  for(let i=0;i<buf.length;i+=255){const n=Math.min(255,buf.length-i);out.push(n);for(let j=0;j<n;j++)out.push(buf[i+j])}
+  out.push(0);
+}
+function quant(d,w,h,dither){
+  const px=new Uint8Array(w*h),B=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+  for(let y=0,i=0;y<h;y++)for(let x=0;x<w;x++,i++){
+    const o=i*4,t=dither?(B[(y&3)*4+(x&3)]/16-.5):0;
+    const r=Math.min(5,Math.max(0,Math.round(d[o]/51+t))),g=Math.min(6,Math.max(0,Math.round(d[o+1]/42.5+t))),b=Math.min(5,Math.max(0,Math.round(d[o+2]/51+t)));
+    px[i]=r*42+g*6+b;
+  }
+  return px;
+}
+function buildGif(frames,w,h,delay,loop,dither){
+  const o=[];const W=(n)=>o.push(n&255,n>>8&255);
+  [..."GIF89a"].forEach(c=>o.push(c.charCodeAt(0)));
+  W(w);W(h);o.push(0xF7,0,0);
+  for(let i=0;i<256;i++){if(i<252){const r=Math.floor(i/42),g=Math.floor(i/6)%7,b=i%6;o.push(Math.round(r*51),Math.round(g*42.5),Math.round(b*51))}else o.push(0,0,0)}
+  if(loop){o.push(0x21,0xFF,11);[..."NETSCAPE2.0"].forEach(c=>o.push(c.charCodeAt(0)));o.push(3,1,0,0,0)}
+  for(const d of frames){
+    o.push(0x21,0xF9,4,0x04);W(delay);o.push(0,0);
+    o.push(0x2C);W(0);W(0);W(w);W(h);o.push(0);
+    lzw(quant(d,w,h,dither),8,o);
+  }
+  o.push(0x3B);
+  return new Uint8Array(o);
+}
+
+// ---- UI ----
+const $=id=>document.getElementById(id);
+const vid=$('vid'),cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
+let url=null,gifBlob=null,gifUrl=null,name='output';
+
+function pick(f){
+  if(!f||!f.type.startsWith('video/')){alert('動画ファイルを選んでください');return}
+  name=f.name.replace(/\.[^.]+$/,'')||'output';
+  if(url)URL.revokeObjectURL(url);
+  url=URL.createObjectURL(f);vid.src=url;vid.classList.remove('hide');
+  $('res').classList.add('hide');
+}
+vid.onloadedmetadata=()=>{
+  $('set').classList.remove('hide');
+  $('s').value=0;$('e').value=Math.min(vid.duration,5).toFixed(1);
+  $('e').max=$('s').max=vid.duration.toFixed(1);est();
+};
+vid.onerror=()=>alert('この動画は読み込めませんでした（ブラウザ非対応の形式かもしれません）');
+$('drop').onclick=()=>$('file').click();
+$('file').onchange=e=>pick(e.target.files[0]);
+$('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('on')};
+$('drop').ondragleave=()=>$('drop').classList.remove('on');
+$('drop').ondrop=e=>{e.preventDefault();$('drop').classList.remove('on');pick(e.dataTransfer.files[0])};
+
+function dims(){const w=+$('w').value,r=vid.videoHeight/vid.videoWidth||9/16;return[w,Math.max(2,Math.round(w*r))]}
+function est(){
+  $('wo').textContent=$('w').value;$('fo').textContent=$('f').value;
+  const s=+$('s').value,e=+$('e').value,n=Math.max(0,Math.floor((e-s)*$('f').value)),[w,h]=dims();
+  $('est').textContent=`${w}×${h}px ／ 約${n}フレーム` + (n>200?'（フレーム数が多いと時間とサイズが増えます）':'');
+}
+['w','f','s','e'].forEach(i=>$(i).oninput=est);
+
+const seek=t=>new Promise(r=>{
+  let done=false;const fin=()=>{if(done)return;done=true;vid.onseeked=null;clearTimeout(to);r()};
+  const to=setTimeout(fin,3000);
+  vid.onseeked=fin;
+  if(Math.abs(vid.currentTime-t)<0.001){setTimeout(fin,60)}else{vid.currentTime=t}
+});
+
+$('go').onclick=async()=>{
+  const s=+$('s').value,e=Math.min(+$('e').value,vid.duration),fps=+$('f').value;
+  if(!(e>s)){alert('終了は開始より後にしてください');return}
+  const n=Math.floor((e-s)*fps),[w,h]=dims();
+  cv.width=w;cv.height=h;vid.pause();
+  $('go').disabled=true;$('pbox').classList.remove('hide');$('res').classList.add('hide');
+  const frames=[];
+  try{
+    for(let i=0;i<n;i++){
+      await seek(s+i/fps);
+      cx.drawImage(vid,0,0,w,h);
+      frames.push(cx.getImageData(0,0,w,h).data);
+      $('p').value=i/n*.7;$('pm').textContent=`フレーム取得 ${i+1}/${n}`;
+    }
+    $('pm').textContent='GIFをエンコード中…';$('p').value=.8;
+    await new Promise(r=>setTimeout(r,30));
+    const bytes=buildGif(frames,w,h,Math.round(100/fps),$('loop').checked,$('dith').checked);
+    gifBlob=new Blob([bytes],{type:'image/gif'});
+    if(gifUrl)URL.revokeObjectURL(gifUrl);
+    gifUrl=URL.createObjectURL(gifBlob);$('out').src=gifUrl;
+    $('info').textContent=`${w}×${h}px ／ ${n}フレーム ／ ${(gifBlob.size/1048576).toFixed(2)} MB`;
+    $('res').classList.remove('hide');$('p').value=1;$('pm').textContent='完了！';
+    $('res').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(err){alert('変換に失敗しました: '+err.message)}
+  $('go').disabled=false;
+};
+
+$('dl').onclick=async()=>{
+  if(!gifBlob)return;
+  try{
+    const d=window.claude&&await window.claude.use('downloads');
+    if(d){await d.save({filename:name+'.gif',data:gifBlob});return}
+  }catch(err){if(err&&err.code==='declined')return}
+  const a=document.createElement('a');a.href=gifUrl;a.download=name+'.gif';a.click();
+};
+// ---- 画像 → 虹色GIF ----
+function setMode(m){
+  $('mv').classList.toggle('hide',m!=='v');$('mi').classList.toggle('hide',m!=='i');
+  $('tv').classList.toggle('on',m==='v');$('ti').classList.toggle('on',m==='i');
+  $('res').classList.add('hide');
+}
+$('tv').onclick=()=>setMode('v');$('ti').onclick=()=>setMode('i');
+let imgEl=null;
+function pickImg(f){
+  if(!f||!f.type.startsWith('image/')){alert('画像ファイルを選んでください');return}
+  name=f.name.replace(/\.[^.]+$/,'')||'rainbow';
+  const u=URL.createObjectURL(f),im=new Image();
+  im.onload=()=>{imgEl=im;$('ipv').src=u;$('ipv').classList.remove('hide');$('iset').classList.remove('hide');$('res').classList.add('hide');iest()};
+  im.onerror=()=>alert('画像を読み込めませんでした');
+  im.src=u;
+}
+$('idrop').onclick=()=>$('ifile').click();
+$('ifile').onchange=e=>pickImg(e.target.files[0]);
+$('idrop').ondragover=e=>{e.preventDefault();$('idrop').classList.add('on')};
+$('idrop').ondragleave=()=>$('idrop').classList.remove('on');
+$('idrop').ondrop=e=>{e.preventDefault();$('idrop').classList.remove('on');pickImg(e.dataTransfer.files[0])};
+const IK=['iw','ic','ifps','igl','iin'];
+function iest(){
+  IK.forEach(k=>$(k+'o').textContent=$(k).value);
+  $('iest').textContent=`1周 約${(+$('ic').value/+$('ifps').value).toFixed(1)}秒 ／ ${$('ic').value}フレーム`;
+}
+IK.forEach(k=>$(k).oninput=iest);iest();
+
+// 色相回転（白やグレーはそのまま、色のある部分だけ回す）
+function hueShift(d,deg,sat){
+  const h0=deg/360;
+  for(let i=0;i<d.length;i+=4){
+    const r=d[i]/255,g=d[i+1]/255,b=d[i+2]/255;
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,df=mx-mn;
+    if(df<1e-3)continue;
+    let h,s=df/(1-Math.abs(2*l-1));
+    if(mx===r)h=((g-b)/df+6)%6;else if(mx===g)h=(b-r)/df+2;else h=(r-g)/df+4;
+    h=(h/6+h0)%1;s=Math.min(1,s*sat);
+    const c=(1-Math.abs(2*l-1))*s,hp=h*6,xx=c*(1-Math.abs(hp%2-1)),m=l-c/2;
+    let R,G,B;
+    if(hp<1){R=c;G=xx;B=0}else if(hp<2){R=xx;G=c;B=0}else if(hp<3){R=0;G=c;B=xx}else if(hp<4){R=0;G=xx;B=c}else if(hp<5){R=xx;G=0;B=c}else{R=c;G=0;B=xx}
+    d[i]=(R+m)*255;d[i+1]=(G+m)*255;d[i+2]=(B+m)*255;
+  }
+}
+$('imode').onchange=()=>{
+  const g=$('imode').value==='g';
+  $('ic').value=g?30:24;$('ifps').value=g?50:12;$('iin').value=g?70:60;iest();
+};
+$('igo').onclick=async()=>{
+  if(!imgEl)return;
+  const W=+$('iw').value,n=+$('ic').value,fps=+$('ifps').value,glow=+$('igl').value,k=+$('iin').value/100;
+  const G=$('imode').value==='g',pad=G?0:Math.min(Math.round(glow*1.5),Math.round(W*.2)),iw=W-2*pad;
+  const ih=Math.max(2,Math.round(iw*imgEl.naturalHeight/imgEl.naturalWidth)),H=ih+2*pad;
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});
+  const L=document.createElement('canvas');L.width=W;L.height=H;const lx=L.getContext('2d');
+  const fxT=$('ifx1').checked,fxG=$('ifx2').checked,P=(W+H)*.6,cs=Math.cos(.4),sn=Math.sin(.4);
+  $('igo').disabled=true;$('ipb').classList.remove('hide');$('res').classList.add('hide');
+  const frames=[];
+  try{
+    for(let i=0;i<n;i++){
+      const ph=i/n;
+      x.globalCompositeOperation='source-over';x.globalAlpha=1;x.shadowBlur=0;x.shadowOffsetX=0;x.shadowColor='transparent';
+      x.fillStyle=$('ibg').value;x.fillRect(0,0,W,H);
+      if(!G&&fxG&&glow>0){
+        const pulse=.65+.35*Math.sin(ph*2*Math.PI);
+        x.shadowColor=`hsl(${ph*360},100%,60%)`;x.shadowBlur=glow*pulse;x.shadowOffsetX=20000;
+        for(let r=0;r<3;r++)x.drawImage(imgEl,pad-20000,pad,iw,ih);
+        x.shadowBlur=0;x.shadowOffsetX=0;x.shadowColor='transparent';
+      }
+      x.drawImage(imgEl,pad,pad,iw,ih);
+      if(!G&&fxT&&k>0){
+        const s0=(ph-1)*P,g=lx.createLinearGradient(s0*cs,s0*sn,(s0+3*P)*cs,(s0+3*P)*sn);
+        for(let j=0;j<=18;j++)g.addColorStop(j/18,`hsl(${(j/6*360)%360},100%,55%)`);
+        lx.globalCompositeOperation='source-over';lx.clearRect(0,0,W,H);lx.fillStyle=g;lx.fillRect(0,0,W,H);
+        lx.globalCompositeOperation='destination-in';lx.drawImage(imgEl,pad,pad,iw,ih);
+        x.globalAlpha=k;x.globalCompositeOperation='color';x.drawImage(L,0,0);
+        x.globalAlpha=k*.35;x.globalCompositeOperation='screen';x.drawImage(L,0,0);
+        x.globalAlpha=1;x.globalCompositeOperation='source-over';
+      }
+      const id=x.getImageData(0,0,W,H);if(G)hueShift(id.data,360*ph,1+k*1.5);frames.push(id.data);
+      $('ip').value=i/n*.8;$('ipm').textContent=`フレーム生成 ${i+1}/${n}`;
+      await new Promise(r=>setTimeout(r,0));
+    }
+    $('ipm').textContent='GIFをエンコード中…';$('ip').value=.9;
+    await new Promise(r=>setTimeout(r,30));
+    const bytes=buildGif(frames,W,H,Math.max(2,Math.round(100/fps)),$('iloop').checked,$('idith').checked);
+    gifBlob=new Blob([bytes],{type:'image/gif'});
+    if(gifUrl)URL.revokeObjectURL(gifUrl);
+    gifUrl=URL.createObjectURL(gifBlob);$('out').src=gifUrl;
+    $('info').textContent=`${W}×${H}px ／ ${n}フレーム ／ ${(gifBlob.size/1048576).toFixed(2)} MB`;
+    $('res').classList.remove('hide');$('ip').value=1;$('ipm').textContent='完了！';
+    $('res').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(err){alert('生成に失敗しました: '+err.message)}
+  $('igo').disabled=false;
+};
+</script>
+</body>
+</html>
